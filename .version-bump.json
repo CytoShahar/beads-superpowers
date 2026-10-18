@@ -29,6 +29,10 @@
       "key": "version"
     },
     {
+      "path": ".antigravity-plugin/plugin.json",
+      "key": "version"
+    },
+    {
       "path": "gemini-extension.json",
       "key": "version"
     }

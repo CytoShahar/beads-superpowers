@@ -10,6 +10,11 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 | `AskUserQuestion` | Use the built-in `question` tool (default-on in the CLI) |
 | `bd` CLI (task tracking via beads) | Use native shell tools with `bd` commands |
 
+**OpenCode V2 (2.0.4+)** renamed tools: `task` → `subagent` (the agent name moves from
+`subagent_type` to `agent`; continue a subagent by re-invoking with `sessionID`),
+`apply_patch` → `patch` (or `write`/`edit` on models without `patch`), `bash` → `shell`.
+V2 has no todo tool — irrelevant here, since `bd` is the task ledger on every harness.
+
 ## Subagent dispatch
 
 OpenCode supports custom subagents via `.opencode/agents/` (Markdown with YAML frontmatter).

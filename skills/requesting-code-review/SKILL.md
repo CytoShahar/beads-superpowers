@@ -25,7 +25,7 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 
 **1. Get git SHAs:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+BASE_SHA=$(git rev-parse HEAD~1)  # or: git merge-base origin/main HEAD
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
@@ -44,6 +44,7 @@ Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md
 - Fix Important issues before proceeding
 - Note Minor issues for later
 - Push back if reviewer is wrong (with reasoning)
+- Decide each **Declined to judge** line — never drop one silently. Dismiss or fix only a clearly trivial line, with the reason stated; file anything else as a bead (`bd create`, stamped per Agent-Filed Bead Discipline) and surface it to the user. Accepting or deferring a behavior a reasonable user would expect is a descoping call, and descoping authority is the human's (Production-Grade Doctrine).
 
 ## Example
 
@@ -52,7 +53,7 @@ Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md
 
 You: Let me request code review before proceeding.
 
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
+BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | cut -d' ' -f1)
 HEAD_SHA=$(git rev-parse HEAD)
 
 [Dispatch code reviewer subagent via code-reviewer.md template]

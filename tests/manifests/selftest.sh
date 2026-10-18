@@ -19,6 +19,8 @@ FILES=(
   hooks/hooks-cursor.json hooks/run-hook.cmd
   skills/using-superpowers/SKILL.md
   .pi/extensions/superpowers.ts
+  .antigravity-plugin/plugin.json assets/antigravity-logo.png
+  scripts/render-antigravity-logo.sh .version-bump.json
 )
 
 FIX="$(mktemp -d)"
@@ -64,5 +66,17 @@ expect_fail "M3 .agents marketplace given a version"
 # M4 — .pi extension loses its export default -> structural grep.
 stage; sed -i 's/export default //' "$FIX/.pi/extensions/superpowers.ts"
 expect_fail "M4 .pi missing export default"
+
+# M5 — Antigravity manifest version drift -> ver_match.
+stage; jq_set "$FIX/.antigravity-plugin/plugin.json" '.version="9.9.9"'
+expect_fail "M5 .antigravity-plugin version drift"
+
+# M6 — Antigravity logo no longer matches its renderer -> freshness check.
+stage; printf 'x' >> "$FIX/assets/antigravity-logo.png"
+expect_fail "M6 stale antigravity logo"
+
+# M7 — Antigravity manifest dropped from .version-bump.json -> registration check.
+stage; jq_set "$FIX/.version-bump.json" 'del(.files[] | select(.path==".antigravity-plugin/plugin.json"))'
+expect_fail "M7 antigravity manifest not version-bumped"
 
 exit $fails

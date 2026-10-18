@@ -6,8 +6,19 @@
 
 set -euo pipefail
 
-# Determine plugin root directory
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Determine plugin root directory.
+# Splits $0 on its last / or \ (run-hook.cmd's cmd half passes a Windows
+# path), with no separator meaning the current directory. This avoids
+# dirname because a SessionStart:startup hook can run with a broken/empty
+# PATH (anthropics/claude-code#43127) before any PATH-repairing sibling hook
+# in the same startup batch takes effect. Everything on the bootstrap path
+# below is likewise builtin-only (no sed/tr/cut/id/cat); the beads side is
+# gated on `command -v bd` and keeps using coreutils, since a PATH that finds
+# bd finds them too.
+case "$0" in
+  */*|*\\*) SCRIPT_DIR="$(cd "${0%[/\\]*}" && pwd)" ;;
+  *) SCRIPT_DIR="$(pwd)" ;;
+esac
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 BSP_MEM_CEILING=1550
@@ -161,15 +172,23 @@ if [ ! -t 0 ]; then
     done
     bsp_stdin="${bsp_stdin}${bsp_line}"   # capture final unterminated line (read rc=1 leaves partial content)
 fi
-bsp_sid=$(printf '%s' "$bsp_stdin" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | tr -cd 'a-zA-Z0-9_-' | cut -c1-64)
-bsp_src=$(printf '%s' "$bsp_stdin" | sed -n 's/.*"source"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'     | tr -cd 'a-zA-Z0-9_-' | cut -c1-32)
+# Pure-bash field extraction (regex + parameter expansion) — no sed/tr/cut, so
+# a broken/empty PATH (#43127) cannot kill the hook here under set -e.
+bsp_json_field() {  # $1 = key, $2 = max length; sanitized to [A-Za-z0-9_-]
+    local re="\"$1\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"" v=""
+    [[ "$bsp_stdin" =~ $re ]] && v="${BASH_REMATCH[1]}"
+    v="${v//[^a-zA-Z0-9_-]/}"
+    printf '%s' "${v:0:$2}"
+}
+bsp_sid=$(bsp_json_field session_id 64)
+bsp_src=$(bsp_json_field source 32)
 # PPID-keyed fallback: duplicate registrations for the SAME event share a parent
 # (the harness process) → still dedup; different sessions = different harness
 # processes (different PPIDs) → never collide on one global "nosid" bucket.
 [ -z "$bsp_sid" ] && bsp_sid="nosid-$PPID"
 [ -z "$bsp_src" ] && bsp_src="unknown"
 
-bsp_marker_dir="${XDG_RUNTIME_DIR:-/tmp}/beads-superpowers-$(id -u)"
+bsp_marker_dir="${XDG_RUNTIME_DIR:-/tmp}/beads-superpowers-${UID}"   # $UID, not $(id -u): PATH-independent
 bsp_marker="$bsp_marker_dir/m-${bsp_sid}-${bsp_src}"
 bsp_suppress=0
 if mkdir -p "$bsp_marker_dir" 2>/dev/null && chmod 700 "$bsp_marker_dir" 2>/dev/null; then
@@ -233,8 +252,14 @@ for settings_file in \
     fi
 done
 
-# Read using-superpowers content
-using_superpowers_content=$(cat "${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md" 2>/dev/null) || using_superpowers_content="beads-superpowers: using-superpowers skill unreadable"
+# Read using-superpowers content via bash's builtin $(< file) instead of
+# cat, for the same PATH-independence reason.
+bsp_skill_md="${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md"
+if [ -r "$bsp_skill_md" ]; then
+    using_superpowers_content="$(<"$bsp_skill_md")"
+else
+    using_superpowers_content="beads-superpowers: using-superpowers skill unreadable"
+fi
 
 # Escape string for JSON embedding using bash parameter substitution.
 escape_for_json() {
@@ -291,14 +316,29 @@ fi
 # CLAUDE_PROJECT_DIR covers settings.json-registered hooks (Claude Code sets it
 # on every hook invocation; plugin-channel invocations also get CLAUDE_PLUGIN_ROOT).
 # Copilot CLI (v1.0.11+) and others expect additionalContext (top-level, SDK standard).
+#
+# emit_json pipes printf through `cat` when cat is on PATH, to absorb EPIPE
+# on Windows: the harness can close the hook's stdout before printf finishes,
+# and Git Bash's printf reports that EPIPE as "printf: write error: Permission
+# denied", which set -euo pipefail lets escape as a startup diagnostic
+# (upstream #1612). When PATH is broken and cat can't be found (upstream
+# #2310), it falls back to printf alone so context still gets injected.
+emit_json() {
+  # shellcheck disable=SC2059 # every caller passes a literal format string
+  if command -v cat >/dev/null 2>&1; then
+    printf "$@" | cat
+  else
+    printf "$@"
+  fi
+}
 if [ "$BSP_EMIT_PLAIN" = "1" ]; then
   printf '%s\n' "$session_context_raw"
 elif [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
-  printf '{\n  "additional_context": "%s"\n}\n' "$(escape_for_json "$session_context_raw")"
+  emit_json '{\n  "additional_context": "%s"\n}\n' "$(escape_for_json "$session_context_raw")"
 elif { [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] || [ -n "${CODEX_PLUGIN_ROOT:-}" ] || [ -n "${CLAUDE_PROJECT_DIR:-}" ]; } && [ -z "${COPILOT_CLI:-}" ]; then
-  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$(escape_for_json "$session_context_raw")"
+  emit_json '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$(escape_for_json "$session_context_raw")"
 else
-  printf '{\n  "additionalContext": "%s"\n}\n' "$(escape_for_json "$session_context_raw")"
+  emit_json '{\n  "additionalContext": "%s"\n}\n' "$(escape_for_json "$session_context_raw")"
 fi
 
 # bd-absent hint (non-fatal, one line to stderr)

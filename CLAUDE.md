@@ -77,7 +77,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project Overview
 
-A plugin for Claude Code, Codex, and OpenCode (verified) plus 7 best-effort harnesses — Cursor, Gemini CLI, GitHub Copilot CLI, Kimi Code, Antigravity, Factory Droid, and Pi — that merges [Superpowers](https://github.com/obra/superpowers) skills (v6.2.0) with [Beads](https://github.com/gastownhall/beads) issue tracking (v1.1.2). It gives AI coding agents composable process-discipline skills (TDD, brainstorming, systematic debugging, code review, verification) plus persistent task memory via a Dolt-backed database.
+A plugin for Claude Code, Codex, and OpenCode (verified) plus 7 best-effort harnesses — Cursor, Gemini CLI, GitHub Copilot CLI, Kimi Code, Antigravity, Factory Droid, and Pi — that merges [Superpowers](https://github.com/obra/superpowers) skills (v7.0.0) with [Beads](https://github.com/gastownhall/beads) issue tracking (v1.1.2). It gives AI coding agents composable process-discipline skills (TDD, brainstorming, systematic debugging, code review, verification) plus persistent task memory via a Dolt-backed database.
 
 **Repository:** <https://github.com/DollarDill/beads-superpowers>
 **Version:** 0.16.0
@@ -170,6 +170,7 @@ This plugin uses `bd` (beads) for ALL task tracking.
 | executing-plans                | Batch execution in single session                                                                                           |
 | test-driven-development        | RED-GREEN-REFACTOR — Iron Law: no code without failing test                                                                 |
 | systematic-debugging           | 4-phase root cause analysis before proposing fixes                                                                          |
+| diagnosing-superpowers         | Diagnose a session that went wrong — `path:line`-cited report, optional scrubbed bundle + issue on DollarDill/beads-superpowers |
 | verification-before-completion | Evidence before claims — bd close requires evidence                                                                         |
 | requesting-code-review         | Dispatches code reviewer subagent                                                                                           |
 | receiving-code-review          | Anti-sycophancy review reception                                                                                            |
@@ -279,7 +280,7 @@ The `example-workflow/` directory provides a ready-to-use development workflow:
 
 | Source                                                    | Version           | What We Track                               |
 | --------------------------------------------------------- | ----------------- | ------------------------------------------- |
-| [obra/superpowers](https://github.com/obra/superpowers)   | v6.2.0 (baseline) | Skill content, new skills, hook changes     |
+| [obra/superpowers](https://github.com/obra/superpowers)   | v7.0.0 (baseline) | Skill content, new skills, hook changes     |
 | [gastownhall/beads](https://github.com/gastownhall/beads) | v1.1.2 (baseline) | CLI commands, new features, bd prime format |
 | [garrytan/gstack](https://github.com/garrytan/gstack) `document-release` | snapshot 2026-07-17 | document-release skill lineage |
 | [mattpocock/skills](https://github.com/mattpocock/skills) `productivity/grilling` | snapshot 2026-07-17 | stress-test skill lineage |

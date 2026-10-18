@@ -25,7 +25,7 @@ This is the quality gate for the beads-superpowers plugin. It verifies everythin
 
 | Source | Repository | Our Baseline | What We Track |
 |--------|-----------|-------------|---------------|
-| **Superpowers** | [obra/superpowers](https://github.com/obra/superpowers) | v6.2.0 | Skills content, new skills, hook structure, plugin manifest |
+| **Superpowers** | [obra/superpowers](https://github.com/obra/superpowers) | v7.0.0 | Skills content, new skills, hook structure, plugin manifest |
 | **Beads** | [gastownhall/beads](https://github.com/gastownhall/beads) | v1.1.2 | CLI commands, new features, bd prime format, deprecations |
 
 ## Known Deliberate Divergences
@@ -51,7 +51,8 @@ These shared skills intentionally differ from upstream superpowers. When Phase 5
 | **.pi/extensions/superpowers.ts** | appends composed beads context (`bd prime` exec) + `beads-superpowers:` bootstrap marker | bootstrap-only extension | beads context is the fork's reason to exist |
 | **test-driven-development** `spec-backed` floor | Fork-only design-artifact precondition before code | no design-artifact precondition | Do NOT file as "revert toward upstream" — it is the default-install design gate, pinned in `KERNEL_MAP` |
 | **.codex-plugin/marketplace.json** | ships it (version-synced mirror of .claude-plugin's) | no such file | kept deliberately for Codex marketplace flows |
-| **OpenCode plugin** | upstream's `.opencode/plugins/` file as base + minimal beads graft (composer bootstrap, compaction re-injection, pointer fallback) | `superpowers.js` static-bootstrap transform | beads context is the fork's core; layout/mechanism otherwise upstream-verbatim |
+| **OpenCode plugin** | upstream's `.opencode/plugins/` file (v7.0.0, V1 + V2) as base + minimal beads graft (composer bootstrap, pointer fallback, compaction re-composition: V1 hook / V2 once per session when no user message survives); no V1/V2 tool-mapping injection | `superpowers.js` with a per-flavor tool-mapping block in the bootstrap | beads context is the fork's core; the tool mapping lives in `skills/using-superpowers/references/opencode-tools.md`; layout/mechanism otherwise upstream-verbatim |
+| **Antigravity logo** | `assets/antigravity-logo.png` rendered by stdlib-python `scripts/render-antigravity-logo.sh` from the banner hexagon mark | renders `superpowers-small.svg` with rsvg-convert | fork brand mark; no extra tool dependency |
 | **subagent-driven-development** (fix rounds) | fresh implementer dispatch every fix round | resume the implementer rounds 1–3, fresh one tier up at 4–5 | resume needs an addressable live subagent — most of our supported harnesses may lack it; fresh dispatch also strengthens external-signal verification and avoids the author defending their own defect (ADR-0064) |
 | **subagent-driven-development** (workspace) | SDD workspace, task briefs, and review packages live under `.internal/sdd/<plan-basename>/` (self-ignored) | `.superpowers/sdd/<plan-basename>/` | one canonical `.internal/` scratch root (spec 2026-06-30); upstream's per-plan workspace shape adopted, path not — do not revert the path on re-sync |
 | **subagent-driven-development** (breaker trip) | controller adjudicates nothing — findings are filed and surfaced, the user decides | controller adjudicates each open finding, may park minors | Production-Grade Doctrine: descoping authority is the human's |
@@ -60,7 +61,16 @@ These shared skills intentionally differ from upstream superpowers. When Phase 5
 | **subagent-driven-development** (fix context) | fix round carries only the latest report section | full prior report | full history is quadratic across rounds and re-anchors fresh eyes on failed approaches |
 | **test-driven-development** `writing-good-tests.md` | fork retains three classes of source-text assertion: **absence-of-defect pins** (fail only if a named defect returns), **security-floor pins** (credential prefixes the handoff skill must redact), and **CHANGE-DETECTOR presence pins** (~27 explicitly-labelled pins across `tests/skills/test-getting-up-to-speed-contract.sh`, `test-kb-triggers.sh`, and `test-session-handoff-contract.sh`, retained under the deletion bar — a pin may go only once converted to behavioral or covered by a bead in the external `cc-eval` tracker). Adoption also drops upstream's `(superpowers:writing-skills)` parenthetical — a dead cross-plugin reference, since `writing-skills` isn't shipped here and a bare `superpowers:` namespace resolves to the upstream plugin — the file's one deliberate deviation from byte-identical | upstream's Warning Signs forbid all source-text assertions | our shipped artifacts *are* prose that instructs agents, and no eval-harness consumes them yet; deleting the redaction pins would be an automatic Reject under the audit rubric's security floor, and deleting the change-detector pins on faith would convert a false alarm into false silence on real breakage. Adopt the six rules and the traps; keep these three classes. Mark SKIP, not Conflict |
 | **All shared skills** (guardrail heading) | guardrail sections are named `## Red Flags` | v6.2.0 renamed several to `## Common Rationalizations` (`using-git-worktrees`, `requesting-code-review`) | `## Red Flags` is a literal alternate in `scripts/check-guardrail-floor.sh`'s `PAT`; renaming a heading silently drops that skill's guardrail count and can trip — or worse, quietly relax — the floor. Adopt upstream's *rows*, keep our *heading*. Mark SKIP, not Conflict |
-| **brainstorming, writing-plans** (companion files) | not shipped — no `spec-document-reviewer-prompt.md` / `plan-document-reviewer-prompt.md` | still ships both files (v6.2.0, `skills/brainstorming/` and `skills/writing-plans/`) | orphans upstream — nothing dispatches them; upstream's own `writing-plans/SKILL.md` Self-Review section says self-review is "not a subagent dispatch"; upstream RELEASE-NOTES v5.0.6 (2026-03-24) records their deprecation in favor of inline self-review (~25 min subagent-review overhead vs. ~30s self-review, no measurable quality difference). Check 5.4 will list them as new companion files every audit — mark SKIP (known-dead), not missing capability |
+| **brainstorming, writing-plans** (companion files) | not shipped — no `spec-document-reviewer-prompt.md` / `plan-document-reviewer-prompt.md`; brainstorming ships upstream's `builder-check-prompt.md` | upstream deleted both reviewer prompts (v6.4.2 writing-plans, v7.0.0 brainstorming — the builder check replaced the spec reviewer) | parity reached at v7.0.0; if Check 5.4 ever lists them again, upstream re-added them — re-assess, don't auto-copy |
+| **brainstorming** (builder check) | builder-check subagent is read-only (no file edits, no `bd`); the controller owns the session bead | builder check with no beads mention | subagents never touch beads (single-writer ledger); mark SKIP |
+| **brainstorming** (small change) | an approved small-change description is recorded on the session bead (`bd update --design`), and TDD's spec-backed floor accepts `Working from: bead <id>` | the small change lives in chat only | durable record survives compaction and feeds the spec-backed floor; mark SKIP |
+| **executing-plans** | beads is the ledger: rulings via `bd note` on the epic; `task-start` records BASE on the task bead; `task-done` runs `bd close` with evidence instead of a `progress.md` line; deferred minors filed as beads; a declined Critical/Important finding becomes a `human`-labelled bead, a security finding is never declined | `progress.md` ledger + harness todos; the executor may rule that Critical/Important code stands | beads survives compaction and is shared with SDD, so either executor resumes the other's plan; descoping is the human's call (Production-Grade Doctrine); mark SKIP |
+| **subagent-driven-development** (rulings) | controller rules and records each as `bd note <epic> "Ruling: …"`; descoping, weakening correctness/security, or accepting material risk is a fifth stop class, asked as one batched question | controller rules on everything except four stop classes; ledger lines in `progress.md` | Production-Grade Doctrine: descoping authority is the human's; beads is the ledger; mark SKIP |
+| **subagent-driven-development** (nested controller) | harness-neutral `references/nested-controller.md`; `using-superpowers/references/claude-code-tools.md` adds only Claude Code spawn-depth mechanics and points to it | the procedure lives in `claude-code-tools.md` only | skills stay harness-neutral; stop-class and breaker items are relayed verbatim, never decided by either layer; mark SKIP |
+| **requesting-code-review** (declined to judge) | requester decides only clearly trivial lines (reason stated); anything else is filed as a bead and surfaced to the user | executor rules on every line | accepting a reasonable-user expectation as out of scope is a descoping call (Production-Grade Doctrine); mark SKIP |
+| **using-superpowers** `references/codex-tools.md` (fix rounds) | fresh implementer every round; `followup_task` resume not used | resume the implementer with `followup_task`, never dispatch fresh | follows the SDD fresh-implementer row (ADR-0064); mark SKIP |
+| **using-superpowers** `references/` (unsupported harnesses) | no `hermes-tools.md` / `muse-tools.md` | ships both (v6.3.0/v6.4.1) | Hermes and Muse are not among the fork's supported harnesses; re-assess if one is added; mark SKIP |
+| **diagnosing-superpowers** | issues searched/filed on DollarDill/beads-superpowers with label `bug` only; workspace `.internal/diagnosis/<id>/`; one diagnosis bead (subagents never touch beads); analysts also check beads usage (context injected, `bd` calls, todo tool or checklist used instead) | files on obra/superpowers with `bug` + `automated-issue-report`; workspace `~/.superpowers/diagnosing-superpowers/`; todo per step | the fork is the product repo, so its maintainers triage first; beads is the ledger; `.internal/` scratch convention; the fork lacks the upstream labels; mark SKIP |
 
 When a CHANGED skill from Phase 5 matches a row here, mark it **SKIP (deliberate divergence)** in the report — not drift.
 
@@ -126,7 +136,7 @@ git clone --depth 1 https://github.com/obra/superpowers.git /tmp/superpowers-ups
 **Check 5.1 — Version gap:**
 ```bash
 upstream_ver=$(grep '"version"' /tmp/superpowers-upstream/package.json | grep -o '[0-9.]*')
-echo "Upstream: v$upstream_ver | Our baseline: v6.2.0"
+echo "Upstream: v$upstream_ver | Our baseline: v7.0.0"
 ```
 
 **Check 5.2 — New skills in upstream:**
@@ -325,7 +335,7 @@ Write the report to `.internal/audits/YYYY-MM-DD-upstream-drift.md`:
 - Skill chain: PASS/FAIL
 
 ## Upstream Drift
-- Superpowers: vX.Y.Z (baseline v6.2.0) — N changes
+- Superpowers: vX.Y.Z (baseline v7.0.0) — N changes
 - Beads: vX.Y.Z (baseline v1.1.0) — N new features
 - New skills: N (action: copy/skip for each)
 - Changed skills: N (action: merge/conflict/skip for each)

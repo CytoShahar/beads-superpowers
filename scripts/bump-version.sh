@@ -40,10 +40,34 @@ write_json_field() {
   jq "$jq_path = \"$value\"" "$file" > "$tmp" && mv "$tmp" "$file"
 }
 
+require_tool() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "error: required tool '$1' is not on PATH" >&2
+    return 1
+  }
+}
+
 # Read the list of declared files from config.
 # Outputs lines of "path<TAB>field"
 declared_files() {
   jq -r '.files[] | "\(.path)\t\(.key)"' "$CONFIG"
+}
+
+# Refuse a bump before writing anything when a declared manifest's field can't
+# be read — otherwise the loop below half-bumps the repo and then dies.
+preflight_manifests() {
+  local path field fullpath ver
+
+  require_tool jq || return 1
+  while IFS=$'\t' read -r path field; do
+    fullpath="$REPO_ROOT/$path"
+    [[ -f "$fullpath" ]] || continue
+
+    if ! ver=$(read_json_field "$fullpath" "$field") || [[ -z "$ver" || "$ver" == "null" ]]; then
+      echo "error: cannot read declared manifest: $path ($field)" >&2
+      return 1
+    fi
+  done < <(declared_files)
 }
 
 # Read the list of declared prose files from config.
@@ -176,7 +200,9 @@ cmd_audit() {
     declared_paths+=("$path")
   done < <(declared_prose)
 
-  # Grep for the version string
+  # Grep for the version string, but not inside a longer number such as an
+  # IP address; a "v" prefix or surrounding quotes still match.
+  local version_pattern="(^|[^0-9.])${current_version//./\\.}([^0-9]|$)"
   local found_undeclared=0
   while IFS= read -r match; do
     local match_file
@@ -200,7 +226,7 @@ cmd_audit() {
       fi
       echo "  $match"
     fi
-  done < <(grep -rn "${exclude_args[@]}" -F "$current_version" "$REPO_ROOT" 2>/dev/null || true)
+  done < <(grep -rnE "${exclude_args[@]}" "$version_pattern" "$REPO_ROOT" 2>/dev/null || true)
 
   if [[ "$found_undeclared" -eq 0 ]]; then
     echo "No undeclared files contain the version string. All clear."
@@ -219,6 +245,8 @@ cmd_bump() {
     echo "error: '$new_version' doesn't look like a version (expected X.Y.Z)" >&2
     exit 1
   fi
+
+  preflight_manifests
 
   echo "Bumping all declared files to $new_version..."
   echo ""

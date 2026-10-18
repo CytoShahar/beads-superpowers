@@ -250,6 +250,24 @@ esac
 
 `bd worktree remove` refuses while the branch has unpushed commits. Verify the work is safe first — `git merge-base --is-ancestor <branch-tip> <base>` — and only then re-run with `--force`.
 
+**If removal is refused for modified or untracked files:** the worktree holds files that exist nowhere else — uncommitted plans, notes, scratch work. `--force` destroys them permanently, so never use it on your own initiative here. List what is at stake and ask via your structured question tool:
+
+```bash
+git -C "$WORKTREE_PATH" status --porcelain -uall
+```
+
+```
+Worktree removal refused — these files were never committed:
+
+<file list>
+
+1. Commit them to <branch> before cleanup
+2. Move them into <main repo root>
+3. Delete them (unrecoverable)
+```
+
+Carry out the choice, then remove the worktree.
+
 **Capture what you learned.** At close, record durable, evidence-backed insights (still true next month, tied to a file, test, or command). Never record guesses, one-offs, or secrets (tokens, keys, PII — every memory is injected into all future sessions). Update in place (`bd remember --key <key>`) rather than adding a near-duplicate.
 
 ```bash
@@ -347,6 +365,7 @@ git status    # MUST show "up to date with origin"
 | **No confirmation for discard** | Accidentally delete work | Require typed "discard" confirmation |
 | **"They seem done with this feature — I'll offer to discard it"** | Discard offered unprompted, next to merge/PR options | The menu is complete as written. Discard happens only when your human partner asks for it in so many words. |
 | **"'Yeah, get rid of it' counts as confirmation"** | Loose language treated as authorization to permanently delete work | Only the typed word `discard` authorizes deletion. |
+| **"Removal refused — `--force` is just finishing the cleanup"** | Uncommitted files that exist only in that worktree are destroyed permanently | Show the `status --porcelain -uall` list and ask: commit, move, or delete. |
 
 ## Red Flags
 
@@ -355,6 +374,7 @@ git status    # MUST show "up to date with origin"
 - Merge without verifying tests on result
 - Delete work without confirmation
 - Force-push without explicit request
+- `--force` a worktree removal refused for modified or untracked files without asking
 - Merge a dropped requirement or a security regression behind a green test suite
 
 **Always:**

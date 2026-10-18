@@ -13,7 +13,7 @@ Agent tool (subagent_type: "general-purpose"):
     ## Task Description
 
     Read your task brief first: [BRIEF_FILE] — it is your requirements. (The controller
-    writes it with `scripts/task-brief <plan-file> <N>`; see the skill's File Handoffs section.)
+    writes it with `bash scripts/task-brief <plan-file> <N>`; see the skill's File Handoffs section.)
 
     ## Context
 
@@ -87,6 +87,18 @@ Agent tool (subagent_type: "general-purpose"):
     - **Escalate, don't improvise** — If the plan doesn't work, stop and explain why
     - **Zero silent failures** — If a test fails or a command errors, report immediately
     - **Never drop a requirement or regress security** to satisfy the plan, a deadline, or "minimal changes." If the plan seems to require either, stop and report it.
+
+    ## You Do Not Dispatch Subagents
+
+    Do all of this task's work yourself. Never spawn a subagent to
+    implement part of the task, and above all never spawn a reviewer to
+    check your work. Self-review (below) means reading your own diff.
+    Review is the controller's job: after you report, it dispatches a
+    fresh reviewer against your diff. A reviewer you spawn duplicates
+    that review at full cost, and its approval counts for nothing in
+    the process. If you catch yourself thinking "an independent review
+    would strengthen my report" — that review is already scheduled.
+    Report instead.
 
     ## Code Organization
 

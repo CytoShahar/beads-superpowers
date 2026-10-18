@@ -37,6 +37,7 @@ beads-superpowers 附带 {{ skill_count }} 个可组合技能，通过 `Skill` �
 | 分支完成 | `finishing-a-development-branch` |
 | 整合或去重记忆 | `memory-curator` |
 | 将工作移交至下一会话 | `session-handoff`（人工调用） |
+| 会话出了问题——查明原因 | `diagnosing-superpowers` |
 
 其他可用技能：`document-release`、`getting-up-to-speed`、`dispatching-parallel-agents`、`project-init`
 
@@ -46,7 +47,7 @@ beads-superpowers 附带 {{ skill_count }} 个可组合技能，通过 `Skill` �
 |---|---|
 | **元** | [using-superpowers](#using-superpowers) |
 | **测试** | [test-driven-development](#test-driven-development) |
-| **调试** | [systematic-debugging](#systematic-debugging), [verification-before-completion](#verification-before-completion) |
+| **调试** | [systematic-debugging](#systematic-debugging), [verification-before-completion](#verification-before-completion), [diagnosing-superpowers](#diagnosing-superpowers) |
 | **设计与规划** | [brainstorming](#brainstorming), [stress-test](#stress-test), [writing-plans](#writing-plans) |
 | **执行** | [subagent-driven-development](#subagent-driven-development), [executing-plans](#executing-plans), [dispatching-parallel-agents](#dispatching-parallel-agents), [using-git-worktrees](#using-git-worktrees), [requesting-code-review](#requesting-code-review), [receiving-code-review](#receiving-code-review), [finishing-a-development-branch](#finishing-a-development-branch) |
 | **文档撰写** | [write-documentation](#write-documentation), [document-release](#document-release) |
@@ -69,6 +70,7 @@ graph TD
   subgraph Debugging ["调试"]
     SD["systematic-debugging"]
     VBC["verification-before-completion"]
+    DS["diagnosing-superpowers"]
   end
   subgraph Design ["设计与规划"]
     BR["brainstorming"]
@@ -136,6 +138,12 @@ graph TD
 
 智能体在关闭 bead 或创建 PR 之前，必须运行验证命令并展示实际输出——而非凭记忆断言。断言之前先出示证据。
 
+### diagnosing-superpowers
+
+**触发条件：** 会话出了问题——重复劳动、无视计划、技能未触发、未使用 beads、"耗时太长"——或你想为维护者生成问题报告。
+
+先与你确认问题陈述，再读取磁盘上的会话记录，并行派发分析子智能体（技能时间线、计划遵循、重复劳动、受阻点、质量证据、请求冲突、成本与耗时）。每条发现都引用 `path:line`。报告只说明 beads-superpowers 是否涉及其中，绝不指认缺陷或提出修复。应你的要求，它会生成脱敏的诊断包，并在 `DollarDill/beads-superpowers` 上起草问题，只有在你确认确切文本后才会提交。
+
 ### brainstorming
 
 **触发条件：** 任何创意性工作之前——功能、组件或行为变更。
@@ -162,9 +170,9 @@ graph TD
 
 ### executing-plans
 
-**触发条件：** 当在单个会话中执行带有审查检查点的计划时。
+**触发条件：** 当你的人类伙伴选择了 Native（内联）执行，或没有可用的子智能体工具时。
 
-按顺序运行多阶段计划：认领、实现、根据验收标准进行验证、关闭、下一阶段。专为直接配合 `writing-plans` 输出而设计。
+会话自己实现每个任务，与 SDD 使用相同的 beads 账本和停止规则：认领、在 TDD 下实现、验证、附带证据关闭、下一个任务——任务之间不做中途确认。最后在能力最强的模型上运行一次全新的全分支审查。这是执行计划成本最低的方式。
 
 ### dispatching-parallel-agents
 

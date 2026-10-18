@@ -33,6 +33,7 @@ The `using-superpowers` bootstrap, injected at session start, tells the agent wh
 | Branch complete | `finishing-a-development-branch` |
 | Consolidate or dedup memories | `memory-curator` |
 | Hand work to the next session | `session-handoff` (human-invoked) |
+| A session went wrong - find out why | `diagnosing-superpowers` |
 
 Also available: `document-release`, `getting-up-to-speed`, `dispatching-parallel-agents`, `project-init`
 
@@ -42,7 +43,7 @@ Also available: `document-release`, `getting-up-to-speed`, `dispatching-parallel
 |---|---|
 | **Meta** | [using-superpowers](#using-superpowers) |
 | **Testing** | [test-driven-development](#test-driven-development) |
-| **Debugging** | [systematic-debugging](#systematic-debugging), [verification-before-completion](#verification-before-completion) |
+| **Debugging** | [systematic-debugging](#systematic-debugging), [verification-before-completion](#verification-before-completion), [diagnosing-superpowers](#diagnosing-superpowers) |
 | **Design & planning** | [brainstorming](#brainstorming), [stress-test](#stress-test), [writing-plans](#writing-plans) |
 | **Execution** | [subagent-driven-development](#subagent-driven-development), [executing-plans](#executing-plans), [dispatching-parallel-agents](#dispatching-parallel-agents), [using-git-worktrees](#using-git-worktrees), [requesting-code-review](#requesting-code-review), [receiving-code-review](#receiving-code-review), [finishing-a-development-branch](#finishing-a-development-branch) |
 | **Documentation** | [write-documentation](#write-documentation), [document-release](#document-release) |
@@ -65,6 +66,7 @@ graph TD
   subgraph Debugging
     SD["systematic-debugging"]
     VBC["verification-before-completion"]
+    DS["diagnosing-superpowers"]
   end
   subgraph Design ["Design & planning"]
     BR["brainstorming"]
@@ -132,6 +134,12 @@ Four-phase root cause analysis: observe, hypothesize, isolate, fix. Requires a c
 
 The agent must run verification commands and show actual output - not assert from memory - before closing a bead or creating a PR. Evidence before assertions.
 
+### diagnosing-superpowers
+
+**Trigger:** A session went wrong - repeated work, an ignored plan, a skill that didn't fire, beads not used, "it took too long" - or you want a bug report for the maintainers.
+
+Agrees a problem statement with you first, then reads the session transcripts on disk and dispatches parallel analysts (skill timeline, plan adherence, repeated work, stumbles, quality evidence, request conflicts, cost and time). Every finding cites `path:line`. The report says whether beads-superpowers was involved but never names a defect or proposes a fix. On request it builds a scrubbed bundle and drafts an issue on `DollarDill/beads-superpowers`, and files it only after you approve the exact text.
+
 ### brainstorming
 
 **Trigger:** Before any creative work - features, components, or behavior changes.
@@ -158,9 +166,9 @@ Dispatches a fresh subagent per task with a single read-only task review between
 
 ### executing-plans
 
-**Trigger:** When executing a plan in a single session with review checkpoints.
+**Trigger:** When your human partner chose Native (inline) execution, or no subagent tool is available.
 
-Runs a multi-phase plan sequentially: claim, implement, verify against acceptance criteria, close, next phase. Designed to complement `writing-plans` output directly.
+The session implements every task itself, under the same beads ledger and stopping rules as SDD: claim, implement under TDD, verify, close with evidence, next task — no check-ins between tasks. One fresh whole-branch review on the most capable model runs at the end. The cheapest way to run a plan.
 
 ### dispatching-parallel-agents
 

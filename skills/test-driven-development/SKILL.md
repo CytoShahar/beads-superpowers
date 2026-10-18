@@ -13,7 +13,7 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 **Violating the letter of the rules is violating the spirit of the rules.**
 
-**Spec-backed:** implementation starts from an approved spec or plan. Before the first edit, state the file you are working from — `Working from: <spec-or-plan path>`. No such file yet? Say so and run brainstorming first. A plan task, a completed root-cause investigation, or a typo/comment/rename already satisfies this.
+**Spec-backed:** implementation starts from an approved spec or plan. Before the first edit, state the file you are working from — `Working from: <spec-or-plan path>`. No such file yet? Say so and run brainstorming first. A plan task, a completed root-cause investigation, a small change your human partner approved in brainstorming and recorded on its session bead (`Working from: bead <id>`), or a typo/comment/rename already satisfies this.
 
 ## When to Use
 
@@ -185,6 +185,16 @@ Confirm:
 **Test fails?** Fix code, not test.
 
 **Other tests fail?** Fix now.
+
+**"Other tests" means the project's suite, not just your file.** A
+green run of the test you wrote is not a green suite. Before you call
+the change done, run the project's test command (bare `pytest`,
+`npm test`, `cargo test` — whatever the repo uses) even when your task
+named only one test file. A scope statement in your task bounds the
+deliverable, not your verification. Any failure that run shows —
+including one you didn't cause — goes in your report by name; a red
+test you watched scroll past and didn't mention is a report falsified
+by omission.
 
 ### REFACTOR - Clean Up
 

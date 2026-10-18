@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Close one task of a Native (inline) plan execution in a single call: run the
+# task's test command, keep its full output in the per-plan workspace, print
+# the tail, and — only if the command succeeded — close the task bead with the
+# evidence (commit range, command, last output line) as its close reason.
+# A failing command records nothing: the task is not complete, the bead stays
+# in_progress.
+#
+# Beads is the ledger: the close reason replaces upstream's markdown ledger line.
+#
+# Usage: bash task-done PLAN_FILE TASK_NUMBER TASK_BEAD_ID BASE -- TEST_COMMAND [ARGS...]
+#   BASE is the SHA task-start printed (also in the bead's notes); the close
+#   reason records BASE..HEAD.
+# Exit: the test command's exit status (or 1 if bd close fails).
+set -euo pipefail
+
+if [ $# -lt 6 ] || [ "$5" != "--" ]; then
+  echo "usage: task-done PLAN_FILE TASK_NUMBER TASK_BEAD_ID BASE -- TEST_COMMAND [ARGS...]" >&2
+  exit 2
+fi
+
+plan=$1
+n=$2
+id=$3
+base=$4
+shift 5
+sdd="$(cd "$(dirname "$0")/../../subagent-driven-development/scripts" && pwd)"
+
+git rev-parse --verify --quiet "$base" >/dev/null || { echo "bad BASE: $base" >&2; exit 2; }
+
+dir=$("${BASH:-bash}" "$sdd/sdd-workspace" "$plan")
+log="$dir/task-${n}-tests.log"
+
+# Render the command the way a person would type it, for the close reason.
+cmd=""
+for a in "$@"; do
+  case "$a" in
+    *[[:space:]\"\;\|\&]*) cmd="$cmd '$a'" ;;
+    *) cmd="$cmd $a" ;;
+  esac
+done
+cmd=${cmd# }
+
+rc=0
+"$@" > "$log" 2>&1 || rc=$?
+
+tail -n 5 "$log"
+if [ "$rc" -ne 0 ]; then
+  echo "task-done: test command exited $rc; Task $n NOT closed (full output: $log)" >&2
+  exit "$rc"
+fi
+
+# A passing command that prints nothing is still a pass: record "(no output)"
+# rather than failing on grep's no-match exit status.
+last=$(grep -v '^[[:space:]]*$' "$log" | tail -n 1) || true
+[ -n "$last" ] || last="(no output)"
+
+reason="Completed: commits $(git rev-parse --short=7 "$base")..$(git rev-parse --short=7 HEAD), tests: $cmd → $last"
+bd close "$id" --reason "$reason" >/dev/null \
+  || { echo "task-done: tests passed but bd close $id failed; close it by hand: $reason" >&2; exit 1; }
+echo "closed $id: $reason"

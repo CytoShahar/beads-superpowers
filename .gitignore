@@ -73,3 +73,9 @@ issues.jsonl
 # cache
 .cache/
 npx-testing/
+
+# Python bytecode / caches (scripts/*.py guards)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
