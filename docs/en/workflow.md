@@ -102,7 +102,7 @@ The same adversarial pass runs again once the plan is written, this time against
 
 ### Implement
 
-Once the plan clears its stress-test gate (or skips it), the orchestrator picks how to run it: subagent-driven-development stays in this session, dispatching a fresh subagent per task inside an isolated worktree under TDD (red-green-refactor); executing-plans instead runs the same plan in a separate session, task by task, without subagent dispatch. Either way, the orchestrator creates an epic bead with task children and dependency chains before dispatching.
+Once the plan clears its stress-test gate (or skips it), the orchestrator picks how to run it: subagent-driven-development stays in this session, dispatching a fresh subagent per task inside an isolated worktree under TDD (red-green-refactor); executing-plans (Native) instead has this session implement the same plan itself, task by task, without per-task subagents, then dispatches one whole-branch review at the end. Either way, the orchestrator creates an epic bead with task children and dependency chains before dispatching.
 
 Before creating the worktree, the skill runs pre-flight checks: it confirms the agent isn't already inside a worktree or a submodule, and asks for consent when a human, rather than the SDD automation, kicked it off.
 

@@ -102,7 +102,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 1. If it's a context problem, provide more context and re-dispatch with the same model
 2. If the task requires more reasoning, re-dispatch with a more capable model
 3. If the task is too large, break it into smaller pieces
-4. If the plan itself is wrong, escalate to the human
+4. If the plan itself is wrong, rule on the correction (`Ruling:` note on the epic) and re-dispatch with the ruling carried in the dispatch — unless the correction falls in a stop class (`SKILL.md`: it would descope, weaken correctness or security, accept material risk, or every path forward is a guess); then escalate to the human
 
 Stamp the blocker bead Severity / Confidence / Evidence per Agent-Filed Bead
 Discipline — the `bd create` form is in `SKILL.md`.

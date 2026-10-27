@@ -106,7 +106,7 @@ graph TD
 
 ### 实现（Implement）
 
-计划通过 `stress-test` 门控（或跳过它）后，编排器会选择执行方式：`subagent-driven-development` 留在本会话中，为每个任务在隔离的 worktree 内派发一个新的子智能体，遵循 TDD（red-green-refactor）；`executing-plans` 则改为在另一个会话中逐个任务执行同一份计划，不派发子智能体。无论哪种方式，编排器都会先创建带有子任务和依赖链的 epic bead，再开始派发。
+计划通过 `stress-test` 门控（或跳过它）后，编排器会选择执行方式：`subagent-driven-development` 留在本会话中，为每个任务在隔离的 worktree 内派发一个新的子智能体，遵循 TDD（red-green-refactor）；`executing-plans`（Native）则由本会话自己逐个任务实现同一份计划，不为每个任务派发子智能体，最后派发一次全分支审查。无论哪种方式，编排器都会先创建带有子任务和依赖链的 epic bead，再开始派发。
 
 在创建 worktree 之前，技能会运行预检：确认智能体未处于 worktree 或子模块内部，并在由人工而非 SDD 自动化启动时请求确认。
 

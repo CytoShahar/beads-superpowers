@@ -11,7 +11,11 @@ Execute plan by dispatching fresh subagent per task, with a single read-only tas
 
 **Core principle:** Fresh subagent per task + a single read-only task review (spec + quality verdicts in one pass) = high quality, fast iteration
 
-**Continuous execution:** Do not pause to check in with your human partner between tasks. Execute all tasks from the plan without stopping. The only reasons to stop are: BLOCKED status you cannot resolve, ambiguity that genuinely prevents progress, or all tasks complete. "Should I continue?" prompts and progress summaries waste their time — they asked you to execute the plan, so execute it.
+**Continuous execution:** Do not pause to check in with your human partner between tasks. Execute all tasks from the plan without stopping. The only reasons to stop are the stop classes named below, a tripped breaker (`references/breaker-trip.md`), or all tasks complete. "Should I continue?" prompts and progress summaries waste their time — they asked you to execute the plan, so execute it.
+
+**Rulings, not stalls.** Conflicts, ambiguities, plan defects — decide them. The spec is the binding authority, the plan is its argument, and your judgment settles what neither answers. Record every decision on the epic bead — `bd note <epic-id> "Ruling: <what you decided> — <why> — <what it costs if wrong>"` — and keep going. A wrong ruling costs rework your human partner can see and undo; a session parked on a question costs their whole day.
+
+**Stop classes — only these stop you; ask them as one batched structured question:** an irreversible or destructive operation; a security-sensitive action; a side effect outside this worktree that norms say you ask about first (a merge, a push to a shared branch, a publish); a plan so broken that every path forward is a guess; and — Production-Grade Doctrine — any call that would drop or defer a required deliverable, weaken correctness or security, or accept material risk. A ruling decides *how* the spec is met, never *whether*: descoping authority is the human's. The breaker is unchanged — at the cap the controller adjudicates nothing.
 
 ## When to Use
 
@@ -19,34 +23,36 @@ Execute plan by dispatching fresh subagent per task, with a single read-only tas
 digraph when_to_use {
     "Have implementation plan?" [shape=diamond];
     "Tasks mostly independent?" [shape=diamond];
-    "Stay in this session?" [shape=diamond];
+    "Partner chose inline, or no subagent tool?" [shape=diamond];
     "subagent-driven-development" [shape=box];
     "executing-plans" [shape=box];
     "Manual execution or brainstorm first" [shape=box];
 
     "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
     "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
-    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
+    "Tasks mostly independent?" -> "Partner chose inline, or no subagent tool?" [label="yes"];
     "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
-    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
-    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+    "Partner chose inline, or no subagent tool?" -> "executing-plans" [label="yes"];
+    "Partner chose inline, or no subagent tool?" -> "subagent-driven-development" [label="no"];
 }
 ```
 
-**vs. Executing Plans (parallel session):**
-- Same session (no context switch)
-- Fresh subagent per task (no context pollution)
-- One task review after each task: spec-compliance and code-quality verdicts in a single read-only pass
-- Faster iteration (no human-in-loop between tasks)
+**vs. Executing Plans (inline):**
+- Fresh subagent per task (no context pollution) instead of one context doing every task
+- One task review after each task (spec-compliance + code-quality verdicts in one read-only pass) instead of only at the end
+- Costs a fresh context per task and per review; inline costs one context plus one final reviewer
+- Both run in this session, share the plan workspace and the beads ledger, and never pause between tasks
 
 ## Pre-Flight Plan Review
 
-Before dispatching Task 1, scan the plan once for conflicts:
+Read the plan once. If it names a `Spec:`, read that too — the spec is the authority the plan argues from, and conflicts inside the plan resolve against it. A plan with no reachable spec gets an epic note saying so; rulings made without one are provisional.
+
+Before dispatching Task 1, scan the plan once for conflicts, writing down what you checked as you check it:
 
 - tasks that contradict each other or the plan's Global Constraints
 - anything the plan explicitly mandates that the review rubric treats as a defect (a test that asserts nothing, verbatim duplication of a logic block)
 
-Present everything you find to your human partner as **one batched structured question** — each finding beside the plan text that mandates it, asking which governs — before execution begins, not one interrupt per discovery mid-plan. If the scan is clean, proceed without comment. The review loop remains the net for conflicts that only emerge from implementation.
+The scan's output is a table, not a verdict: one row for every pair of tasks that share a file or an interface (what one produces against what the other consumes, and what you found), and one row per task on whether its own text agrees with itself (its tests against its code, the files it creates against the files it later touches). "The scan is clean" without those rows is not a scan you ran. Record the table on the epic bead (`bd note <epic-id>`; create the epic first). Rule on each finding before execution begins and record the ruling beside its row; findings in a stop class above go to your human partner as **one batched structured question**, not one interrupt per discovery mid-plan. The review loop remains the net for conflicts that only emerge from implementation.
 
 ## The Process (Sequential Mode)
 
@@ -241,6 +247,16 @@ else:
 
 Mode selection is automatic. The orchestrator checks after every batch or sequential task completes.
 
+## Dispatch Economy
+
+**Batch small same-shape work.** When several tasks are each a small, independent edit of the same kind — the same one-line fix, constant change, or field addition repeated across files — compose ONE brief listing every file and its change, send it to a single implementer, and review its diff as one unit; the reviewer checks every listed file has its hunk. Close each task bead with the batch's commit range. Reserve one dispatch per task for work that needs its own judgment, tests, or review surface. (This is distinct from Parallel Batch Mode, which runs *independent* tasks concurrently in separate worktrees.)
+
+**No nested dispatch.** Implementers and reviewers never dispatch subagents — the prompt templates carry the contract. A worker-spawned reviewer duplicates the task review at full cost and its verdict counts for nothing.
+
+**Waiting on subagents:** never poll with short timeouts, and never sit in one silent, open-ended wait. While you have local work (beads updates, packaging the next review, reading reports), keep working. When genuinely idle, wait in bounded stretches (five to ten minutes, where your platform allows); between stretches post one line of status and chase any child that finished without reporting.
+
+**Cheaper orchestration (opt-in):** where the harness supports nested subagents, your human partner may ask for the whole loop to run one layer down on a mid-tier model — see `references/nested-controller.md`.
+
 ## Model Selection
 
 Use the least powerful model that can handle each role to conserve cost and increase speed.
@@ -273,7 +289,7 @@ A review returning findings starts a fix round: dispatch a **fresh implementer**
 recent** section of the report file. **Record `ROUND0_HEAD` (round 0's final
 commit, not `BASE`) before dispatching fix round 1** — it is round 1's `<fix-base>`.
 Then dispatch a scoped re-review filling `re-review-prompt.md` against
-`scripts/review-package <plan-file> <fix-base> HEAD`.
+`bash scripts/review-package <plan-file> <fix-base> HEAD`.
 
 **A re-review PASS requires the reviewer's verdict AND a green full test suite** —
 **you (the controller) run the suite** and report it in `[SUITE_STATUS]`. What the
@@ -296,10 +312,18 @@ Implementer status handling (BLOCKED / NEEDS_CONTEXT and friends): see `referenc
 
 ## Final Review
 
-Run `scripts/review-package <plan-file> <MERGE_BASE> HEAD` and dispatch a
+Run `bash scripts/review-package <plan-file> <MERGE_BASE> HEAD` and dispatch a
 most-capable-tier reviewer over the whole branch — the only place the composite of
 all fix rounds is examined. Findings go to one fix subagent, then one scoped
-re-review; residuals follow the breaker rules.
+re-review; residuals follow the breaker rules. The reviewer's "Declined to judge"
+lines are handled per `beads-superpowers:requesting-code-review` — filed and
+surfaced, never silently decided.
+
+**Rulings I made:** before teardown, collect every `Ruling:` note from the epic and
+its tasks — preflight rulings, mid-plan rulings, all of them — into your final
+message under "Rulings I made", in the order made, each with what it costs if
+wrong. The list is exhaustive; it is how the decisions you took on your human
+partner's behalf reach them.
 
 **Teardown:** remove the plan's workspace once the final review is clean **and**
 each task's outcome and any implementer-raised concerns are recorded in beads.
@@ -309,11 +333,12 @@ Reports are the only non-regenerable artifact — delete once the record is dura
 
 Hand task text and review diffs to subagents as **files**, not pasted context — this keeps large text out of your own context and gives subagents a single thing to read.
 
-- Before dispatching an implementer, run `scripts/task-brief <plan-file> <N>` → writes `.internal/sdd/<plan-basename>/task-<N>-brief.md`. Pass that path to the implementer as "read this first — it is your requirements."
+- Before dispatching an implementer, run `bash scripts/task-brief <plan-file> <N>` → writes `.internal/sdd/<plan-basename>/task-<N>-brief.md`. Pass that path to the implementer as "read this first — it is your requirements."
 - The implementer writes its full report to `.internal/sdd/<plan-basename>/task-<N>-report.md` (you name the path via `[REPORT_FILE]`); the reviewer reads it as a file. Fix rounds **append** to it.
-- Before dispatching the reviewer, run `scripts/review-package <plan-file> <BASE> <HEAD>` → writes `.internal/sdd/<plan-basename>/review-<base7>..<head7>.diff`. `BASE` is the commit recorded before the implementer ran — never `HEAD~1`.
+- Before dispatching the reviewer, run `bash scripts/review-package <plan-file> <BASE> <HEAD>` → writes `.internal/sdd/<plan-basename>/review-<base7>..<head7>.diff`. `BASE` is the commit recorded before the implementer ran — never `HEAD~1`. An empty or non-descendant `BASE..HEAD` range exits 3: the implementer committed elsewhere — investigate, never review nothing.
 - The reviewer is **read-only**: it must not mutate the working tree, the index, HEAD, or branch state.
-- The workspace is resolved **per plan, per working tree** (`scripts/sdd-workspace <plan-file>`). Two plans in one tree never share brief filenames, and in Parallel Batch Mode each `bd worktree` gets its own tree.
+- The workspace is resolved **per plan, per working tree** (`bash scripts/sdd-workspace <plan-file>`). A `plan-path` marker records the owning plan, so two plans sharing a basename get distinct directories — use the path the scripts print, not one you construct. In Parallel Batch Mode each `bd worktree` gets its own tree.
+- Invoke the scripts through `bash`: packaged installs can strip exec bits.
 
 ## Prompt Templates
 
@@ -358,7 +383,7 @@ Implementer: "Got it. Implementing now..."
   - Self-review: Found I missed --force flag, added it
   - Committed
 
-[Generate review package: scripts/review-package PLAN_FILE BASE HEAD]
+[Generate review package: bash scripts/review-package PLAN_FILE BASE HEAD]
 [Dispatch single task reviewer with the brief, report file, and diff]
 Task reviewer:
   Spec Compliance: ✅ Spec compliant - all requirements met, nothing extra
@@ -427,7 +452,7 @@ bd remember "<kind>: <durable, evidence-backed insight>"   # kind: lesson / patt
 | "Parallel subagents on different files won't collide" | Every parallel subagent MUST have its own `bd worktree` — never dispatch parallel subagents without per-task worktree isolation. |
 | "A few extra subagents this batch won't hurt" | Never dispatch more than 5 parallel subagents in a single batch (resource exhaustion). |
 | "Claude's built-in `isolation: \"worktree\"` is the same thing" | It bypasses beads DB sharing — `bd worktree` is not optional isolation, it's the only isolation this skill recognizes. **Never** substitute Claude's `isolation: "worktree"` parameter for it. |
-| "The subagent can just read the plan file itself" | Never make a subagent navigate the raw multi-task plan file — give it a focused, self-contained task brief instead (`scripts/task-brief` writes one, see File Handoffs). |
+| "The subagent can just read the plan file itself" | Never make a subagent navigate the raw multi-task plan file — give it a focused, self-contained task brief instead (`bash scripts/task-brief` writes one, see File Handoffs). |
 | "It'll figure out where the task fits" | Never skip scene-setting context — the subagent needs to understand where its task fits. |
 | "Ignore subagent questions, keep it moving" | Answer clearly and completely, provide additional context if needed, and don't rush the subagent into implementation. |
 | "Close enough on spec compliance" / "Accept 'close enough' on spec compliance" | Reviewer found spec issues = not done. Fix it, or run out the five-round cap and let the breaker take over (`references/breaker-trip.md`) — those are the only exits. |
@@ -439,6 +464,8 @@ bd remember "<kind>: <durable, evidence-backed insight>"   # kind: lesson / patt
 | "One more round will converge" / "Just one more fix round, it's nearly there" | Past the cap, rounds don't converge — the loop is capped at five rounds. At the cap, file the findings and surface them to the user (`references/breaker-trip.md`). |
 | "The reviewer will just find something new anyway" | A scoped re-review verifies only the named findings in the fix diff; it cannot wander. New findings on code the fix diff didn't touch aren't this round's job — track them separately, they don't extend the loop. |
 | "This finding is obviously wrong, I'll drop it" | Never self-adjudicate a finding. At the round cap, file every open finding as a bead and surface both dispositions to the user — silent discards are forbidden. |
+| "The implementer spawned its own reviewer — free extra assurance" | It's a duplicate seat reviewing the same diff; the task review is the gate. A worker-spawned reviewer is a defect to flag, not rigor. |
+| "I'll ask which governs and wait" / "I'll rule that this requirement can be dropped" | Rule and record (`Ruling:` note) — stalling costs the human's day. But a ruling never descopes, weakens security, or accepts material risk: those are stop classes. |
 | "Reviews slow the loop down" | The loop without reviews is just unverified churn — reviews are the loop's brakes and steering. |
 | "Recording progress in beads is overhead" | Beads is what survives compaction. Controllers that lose their place have re-dispatched entire completed task sequences — record each task's commit range in `bd close --reason` as you go. |
 | "Discard or defer a failed task to quietly descope a required deliverable" / "let Model-Selection cost-minimization accept weaker correctness/security review" | Surface the trade-off, never take it silently (Production-Grade Doctrine). |
@@ -461,4 +488,4 @@ bd remember "<kind>: <durable, evidence-backed insight>"   # kind: lesson / patt
 - **beads-superpowers:systematic-debugging** - Integration test failures after batch merge
 
 **Alternative workflow:**
-- **beads-superpowers:executing-plans** - Use for parallel session instead of same-session execution
+- **beads-superpowers:executing-plans** - Use when your human partner chose inline execution, or no subagent tool is available

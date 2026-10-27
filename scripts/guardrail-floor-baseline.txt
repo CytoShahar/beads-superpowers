@@ -1,4 +1,5 @@
 skills/brainstorming/SKILL.md 5
+skills/diagnosing-superpowers/SKILL.md 1
 skills/dispatching-parallel-agents/SKILL.md 0
 skills/document-release/SKILL.md 5
 skills/executing-plans/SKILL.md 1

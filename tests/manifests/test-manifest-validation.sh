@@ -37,7 +37,7 @@ jq_ok() {  # file, filter, label
 }
 # JSON validity: plugin manifests + all three marketplace manifests
 for f in .claude-plugin/plugin.json .codex-plugin/plugin.json .cursor-plugin/plugin.json \
-         hooks/hooks-cursor.json .kimi-plugin/plugin.json gemini-extension.json \
+         hooks/hooks-cursor.json .kimi-plugin/plugin.json gemini-extension.json .antigravity-plugin/plugin.json \
          .claude-plugin/marketplace.json .codex-plugin/marketplace.json .agents/plugins/marketplace.json; do
   if [ -f "$f" ]; then
     valid_json "$f"
@@ -48,6 +48,7 @@ done
 ver_match .cursor-plugin/plugin.json '.version'
 ver_match .kimi-plugin/plugin.json '.version'
 ver_match gemini-extension.json '.version'
+ver_match .antigravity-plugin/plugin.json '.version'
 jq -e '.skills=="./skills/"' .cursor-plugin/plugin.json >/dev/null && echo "cursor skills OK" || fail=1
 jq -e '.sessionStart.skill=="using-superpowers"' .kimi-plugin/plugin.json >/dev/null && echo "kimi sessionStart OK" || fail=1
 
@@ -109,6 +110,51 @@ if [ -f "$PI" ]; then
   need "skills/using-superpowers/SKILL.md"
 else
   echo "MISSING: $PI"; fail=1
+fi
+
+# Antigravity native plugin (upstream v7.0.0, #2479): `agy plugin install <repo>`
+# reads .antigravity-plugin/plugin.json; without it agy falls back to importing
+# the repo as a Gemini CLI extension. Marketplace-required fields, a <=160-char
+# card description, 1-3 prompts, a square RGBA PNG logo >=128px that matches a
+# fresh render, version-bump registration, and no root plugin.json / hooks.json
+# / rules (agy would read or run those instead).
+AGY=.antigravity-plugin/plugin.json
+if [ -f "$AGY" ]; then
+  jq_ok "$AGY" '[.name,.displayName,.description,.logo,.version,.author] | all(. != null and . != "")' "antigravity required fields"
+  jq_ok "$AGY" '.name=="beads-superpowers"' "antigravity plugin name"
+  jq_ok "$AGY" '(.description|length) <= 160' "antigravity description fits a Marketplace card"
+  jq_ok "$AGY" '(.suggestedPrompts|type=="array") and (.suggestedPrompts|length) >= 1 and (.suggestedPrompts|length) <= 3 and (.suggestedPrompts|all(type=="string" and length > 0))' "antigravity suggestedPrompts 1-3"
+  if [ "$(jq -c .author "$AGY")" = "$(jq -c .author .claude-plugin/plugin.json)" ]; then
+    echo "ROLE OK: antigravity author matches .claude-plugin"
+  else
+    echo "ROLE FAIL: antigravity author differs from .claude-plugin"; fail=1
+  fi
+  jq_ok .version-bump.json 'any(.files[]; .path==".antigravity-plugin/plugin.json" and .key=="version")' "version-bump registers antigravity manifest"
+  AGY_LOGO=$(jq -r .logo "$AGY")
+  need "$AGY_LOGO"
+  if python3 - "$AGY_LOGO" <<'PY'
+import struct, sys
+data = open(sys.argv[1], "rb").read(26)
+ok = data[:8] == b"\x89PNG\r\n\x1a\n"
+w, h, _, color = struct.unpack(">IIBB", data[16:26]) if ok else (0, 0, 0, 0)
+sys.exit(0 if ok and w == h and w >= 128 and color == 6 else 1)
+PY
+  then echo "antigravity logo OK: square RGBA PNG"
+  else echo "antigravity logo BAD: $AGY_LOGO (want square RGBA PNG >=128px)"; fail=1
+  fi
+  agy_tmp=$(mktemp -d)
+  if bash scripts/render-antigravity-logo.sh --output "$agy_tmp/logo.png" >/dev/null 2>&1 \
+     && cmp -s "$agy_tmp/logo.png" "$AGY_LOGO"; then
+    echo "antigravity logo OK: matches scripts/render-antigravity-logo.sh"
+  else
+    echo "antigravity logo STALE: run scripts/render-antigravity-logo.sh"; fail=1
+  fi
+  rm -rf "$agy_tmp"
+  for stray in plugin.json hooks.json rules; do
+    if [ -e "$stray" ]; then echo "STRAY ROOT $stray (agy would read it)"; fail=1; fi
+  done
+else
+  echo "MISSING: $AGY"; fail=1
 fi
 
 exit $fail

@@ -50,7 +50,7 @@ bd init                               # 2. Bootstrap the Dolt database for this 
 
 5. **stress-test**（再次） — 对计划本身进行同样的对抗性审查：任务边界、并行安全性、失败模式。
 
-6. **subagent-driven-development** 或 **executing-plans** — 为每项任务派遣全新子智能体，各自在独立的 worktree 中工作（实现者遵循 **test-driven-development**）；或分批执行并设置人工检查点。
+6. **subagent-driven-development** 或 **executing-plans** — 为每项任务派遣全新子智能体，各自在独立的 worktree 中工作（实现者遵循 **test-driven-development**）；或在本会话中内联执行计划，最后进行一次全分支审查。
 
 7. **requesting-code-review** — 任务级与整分支的对照计划审查。严重问题会阻塞进度。
 
@@ -78,6 +78,7 @@ bd init                               # 2. Bootstrap the Dolt database for this 
 |------|------|
 | `systematic-debugging` | 在提出任何修复方案前进行 4 阶段根因分析 |
 | `verification-before-completion` | 主张之前先有证据——除非有命令证明，否则任务不算"完成" |
+| `diagnosing-superpowers` | 以 `path:line` 引证诊断出问题的会话，可选生成脱敏的问题报告 |
 
 ### 设计与规划
 
@@ -92,7 +93,7 @@ bd init                               # 2. Bootstrap the Dolt database for this 
 | 技能 | 作用 |
 |------|------|
 | `subagent-driven-development` | 每项任务派遣全新智能体，含规格与质量审查；支持并行批处理模式 |
-| `executing-plans` | 在单次会话内批量执行计划，并设置检查点 |
+| `executing-plans` | 在本会话中原生（内联）执行计划，最后进行一次全分支审查 |
 | `dispatching-parallel-agents` | 将 2 个以上相互独立的任务分派给并行智能体——彼此无共享状态 |
 | `using-git-worktrees` | 每个功能使用独立的开发分支 |
 | `requesting-code-review` | 按结构化标准派遣代码审查子智能体 |
@@ -232,7 +233,7 @@ copilot plugin update beads-superpowers
 agy plugin install https://github.com/DollarDill/beads-superpowers
 ```
 
-注意：复用 Claude 插件清单——与上游验证的机制相同。
+注意：以原生 Antigravity 插件安装（`.antigravity-plugin/plugin.json`）。Antigravity 没有会话启动钩子，因此 `using-superpowers` 通过技能发现加载，beads 上下文不会自动注入——请在会话开始时运行 `bd prime`。
 
 ### Factory Droid
 

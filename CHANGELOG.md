@@ -9,6 +9,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `diagnosing-superpowers` (from upstream superpowers v6.4.1): ask your agent to "figure out what went wrong with beads-superpowers in this session" and it reads the session transcripts and reports what happened with `path:line` evidence, including whether beads was actually used. On request it builds a scrubbed bundle or drafts an issue on DollarDill/beads-superpowers for your approval. Workspace lives under `.internal/diagnosis/`.
+- Antigravity installs as a native plugin (`.antigravity-plugin/plugin.json`, with its own logo) instead of falling back to the Claude manifest.
+- OpenCode 2.0.4+ (V2) support: native skill registration, bootstrap survives continuation, restarts, forks and compaction, and delegated child sessions no longer receive the bootstrap. V1 keeps working.
+
+### Changed
+
+- Upstream baseline advances to superpowers **v7.0.0** (from v6.2.0), adopting v6.3.0, v6.4.1, v6.4.2 and v7.0.0 with every deliberate divergence kept (beads ledger, `beads-superpowers:` namespace, `.internal/` scratch paths, Production-Grade Doctrine, stress-test gates).
+- `brainstorming` is rebuilt on upstream v7: it draws out what you want with one open question at a time, plays each part back for correction, finds out which build choices you want to own, sizes the work (do it now / agree a small change in chat / write a design), and replaces the spec reviewer with a read-only builder check. Session beads and the stress-test gate are kept; an approved small change is recorded on the session bead.
+- `test-driven-development`'s spec-backed rule also accepts `Working from: bead <id>` for a small change approved in brainstorming, and the project's whole suite — not just the task's test file — now defines green.
+- `writing-plans` writes leaner plans that record decisions (signatures, test assertions, the spec's values) instead of transcribing code, adds a `Spec:` pointer and a Review Focus section, checks its own proportion, and requires you to review the saved plan before anything runs. The handoff offers Subagent-driven or Native execution with a recommendation.
+- `executing-plans` is rebuilt as Native (inline) execution: the session implements every task itself under the same beads ledger and stopping rules as SDD, with no check-ins between tasks, then one whole-branch review on the most capable model. `task-start` / `task-done` helpers record BASE on the task bead and close it with test evidence only when the tests pass.
+- `subagent-driven-development`: plan conflicts get a recorded ruling (`bd note`) instead of stalling — descoping or accepting risk still stops for you; small same-shape tasks batch into one dispatch; implementers and reviewers may not spawn subagents; same-basename plans no longer share a workspace; `review-package` refuses empty or non-descendant ranges; an opt-in nested controller on a mid-tier model can run the loop one layer down.
+- `requesting-code-review`: reviewers judge unspecified behaviour by what a reasonable user would expect and list what they declined to judge; anything beyond a trivial line is filed as a bead for you to decide. The base-SHA example no longer breaks when the skill is invoked with arguments.
+- `finishing-a-development-branch` never force-removes a worktree with uncommitted work; it asks whether to commit, move or delete it.
+- SessionStart works when the harness launches it with a broken `PATH`.
+- `bump-version.sh` refuses before writing anything when a declared version field can't be read.
+
+### Fixed
+
+- `systematic-debugging`'s diagnostic example no longer prints the secret it checks for.
+- The brainstorm visual companion shows screens containing `$'`, `$&` and similar sequences intact.
+- Windows: `run-hook.cmd` finds per-user Git for Windows installs, skips WSL launchers, ignores a `bash` or `where` planted in the current directory, and passes hook exit codes through.
+
 ## [0.16.0] - 2026-07-27
 
 ### Added

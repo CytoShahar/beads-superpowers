@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Begin one task of a Native (inline) plan execution in a single call: extract
+# the task's brief (via subagent-driven-development's task-brief, so both
+# skills share one per-plan workspace) and record BASE, the commit the task's
+# review range is cut from — printed, AND appended to the task bead's notes so
+# it survives compaction. One tool call instead of three, because every call in
+# an inline session is a turn that re-reads the whole context.
+#
+# Beads is the ledger: this script never writes a markdown progress file.
+#
+# Usage: bash task-start PLAN_FILE TASK_NUMBER TASK_BEAD_ID
+# Prints:
+#   brief: <path to the task's brief file>
+#   base:  <full SHA of HEAD>
+set -euo pipefail
+
+if [ $# -ne 3 ]; then
+  echo "usage: task-start PLAN_FILE TASK_NUMBER TASK_BEAD_ID" >&2
+  exit 2
+fi
+
+plan=$1
+n=$2
+id=$3
+sdd="$(cd "$(dirname "$0")/../../subagent-driven-development/scripts" && pwd)"
+
+# Invoke via bash rather than direct exec: some packagers strip exec bits.
+out=$("${BASH:-bash}" "$sdd/task-brief" "$plan" "$n")
+brief=$(printf '%s\n' "$out" | sed -n 's/^wrote \(.*\): [0-9][0-9]* lines$/\1/p')
+[ -n "$brief" ] || { echo "task-brief did not report a path: $out" >&2; exit 1; }
+
+base=$(git rev-parse HEAD)
+bd note "$id" "task-start: Task $n BASE $base" >/dev/null \
+  || { echo "bd note failed for $id; BASE not recorded in beads" >&2; exit 1; }
+
+echo "brief: $brief"
+echo "base: $base"
